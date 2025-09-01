@@ -42,9 +42,11 @@ body {
     background: linear-gradient(135deg, var(--bg-color) 0%, #0f0f0f 100%);
     color: var(--text-color);
     margin: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     font-weight: 400;
     line-height: 1.6;
+    min-height: 100vh;
 }
 
 /* Header Styles */
@@ -356,8 +358,11 @@ header h1 {
 .content-wrapper {
     display: grid;
     grid-template-columns: 280px 280px 280px 1fr;
-    height: calc(100vh - 200px);
+    min-height: calc(100vh - 200px);
+    height: auto;
     background: var(--bg-color);
+    align-items: start;
+    overflow: visible;
 }
 
 /* Queue Columns */
@@ -367,6 +372,8 @@ header h1 {
     display: flex;
     flex-direction: column;
     background: var(--card-bg);
+    height: auto;
+    min-height: 0;
 }
 
 .queue-header {
@@ -507,7 +514,9 @@ header h1 {
     display: flex;
     flex-direction: column;
     background: var(--bg-color);
-    overflow: hidden;
+    overflow: visible;
+    min-height: auto;
+    height: auto;
 }
 
 .grid-header {
@@ -552,13 +561,15 @@ header h1 {
 
 .agent-grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 20px;
-    padding: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    padding: 12px;
     align-content: start;
-    overflow-y: auto;
+    overflow: visible;
     flex: 1;
     min-height: 0;
+    max-height: none;
+    height: auto;
 }
 
 /* Ajustes para poucos agentes */
@@ -640,21 +651,21 @@ header h1 {
 /* Responsividade para diferentes tamanhos de tela */
 @media (max-width: 1400px) {
     .agent-grid-container {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 18px;
-        padding: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 14px;
+        padding: 16px;
     }
 }
 
 @media (max-width: 1200px) {
     .agent-grid-container {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 16px;
-        padding: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 12px;
+        padding: 14px;
     }
     
     .agent-grid-container.few-agents {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 280px));
+        grid-template-columns: repeat(auto-fit, minmax(160px, 260px));
     }
 }
 
@@ -849,8 +860,8 @@ header h1 {
 .agent-card {
     background: linear-gradient(135deg, var(--card-bg) 0%, #0d0d0d 100%);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: 24px;
+    border-radius: var(--radius-lg);
+    padding: 12px;
     text-align: center;
     aspect-ratio: 1 / 1;
     display: flex;
@@ -861,6 +872,7 @@ header h1 {
     position: relative;
     overflow: hidden;
     cursor: pointer;
+    min-height: 100px;
 }
 
 .agent-card:hover {
@@ -974,7 +986,7 @@ header h1 {
 
 .chat-count { 
     font-family: var(--font-mono); 
-    font-size: 3rem; 
+    font-size: 2rem; 
     font-weight: 600;
     line-height: 1;
     background: linear-gradient(135deg, var(--text-color) 0%, var(--text-secondary) 100%);
@@ -984,10 +996,10 @@ header h1 {
 }
 
 .agent-name { 
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-color);
-    line-height: 1.4;
+    line-height: 1.2;
     margin: 0;
 }
 
@@ -996,7 +1008,7 @@ header h1 {
 }
 
 .status-text {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     color: var(--text-secondary);
     font-weight: 400;
 }
