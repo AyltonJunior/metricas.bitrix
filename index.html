@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Monitoramento Multi-Setor</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-chart-line"></i> Atendimentos em Tempo Real</h1>
+            <div class="header-info">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Sistema Online</span>
+                </div>
+                <div id="clock"></div>
+            </div>
+        </div>
+    </header>
+
+    <nav id="sector-tabs">
+        <div class="tab-scroll-controls">
+            <button class="scroll-btn scroll-left" id="scroll-left">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="scroll-btn scroll-right" id="scroll-right">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </nav>
+
+    <section id="metrics-bar">
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <span class="metric-label">Fila Geral</span>
+            <span class="metric-value" id="geral-queue-value">--</span>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-user-clock"></i>
+            </div>
+            <span class="metric-label">Aguardando Humano</span>
+            <span class="metric-value" id="human-queue-value">--</span>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-stopwatch"></i>
+            </div>
+            <span class="metric-label">TMA</span>
+            <span class="metric-value" id="tma-value">--</span>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-reply"></i>
+            </div>
+            <span class="metric-label">TMR</span>
+            <span class="metric-value" id="tmr-value">--</span>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <span class="metric-label">TME</span>
+            <span class="metric-value" id="tme-value">--</span>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <span class="metric-label">Ativos</span>
+            <span class="metric-value" id="active-chats-value">--</span>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <span class="metric-label">Finalizados</span>
+            <span class="metric-value" id="completed-chats-value">--</span>
+        </div>
+    </section>
+
+    <div class="content-wrapper">
+        <aside id="geral-queue" class="queue-column">
+            <div class="queue-header">
+                <h2><i class="fas fa-globe-americas"></i> Fila Geral</h2>
+                <div class="queue-count" id="geral-queue-count">0</div>
+            </div>
+            <div id="geral-queue-list" class="queue-list"></div>
+        </aside>
+
+        <aside id="franqueados-queue" class="queue-column">
+            <div class="queue-header">
+                <h2><i class="fas fa-store"></i> NRS Franqueados</h2>
+                <div class="queue-count" id="franqueados-queue-count">0</div>
+            </div>
+            <div id="franqueados-queue-list" class="queue-list"></div>
+        </aside>
+
+        <aside id="human-queue" class="queue-column">
+            <div class="queue-header">
+                <h2><i class="fas fa-user-friends"></i> Aguardando Analista</h2>
+                <div class="queue-count" id="human-queue-count">0</div>
+            </div>
+            <div id="human-queue-list" class="queue-list"></div>
+        </aside>
+
+        <main id="agent-grid">
+            <div class="grid-header">
+                <h2><i class="fas fa-users-cog"></i> Agentes Ativos</h2>
+                <div class="grid-stats">
+                    <span class="stat-item">
+                        <i class="fas fa-circle text-success"></i>
+                        <span>Normal</span>
+                    </span>
+                    <span class="stat-item">
+                        <i class="fas fa-circle text-warning"></i>
+                        <span>Ocupado</span>
+                    </span>
+                    <span class="stat-item">
+                        <i class="fas fa-circle text-danger"></i>
+                        <span>Sobrecarregado</span>
+                    </span>
+                    <span class="stat-item">
+                        <i class="fas fa-store text-warning"></i>
+                        <span>NRS Franqueados</span>
+                    </span>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <template id="queue-item-template">
+        <div class="queue-item">
+            <div class="queue-item-content">
+                <span class="queue-customer"></span>
+                <span class="queue-time"></span>
+            </div>
+            <div class="queue-item-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+    </template>
+
+    <template id="agent-card-template">
+        <div class="agent-card">
+            <div class="agent-status-indicator"></div>
+            <div class="agent-content">
+                <span class="chat-count">0</span>
+                <h3 class="agent-name"></h3>
+                <div class="agent-status">
+                    <span class="status-text">Disponível</span>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Modal para detalhes do agente -->
+    <div id="agent-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-agent-name">Nome do Agente</h2>
+                <button class="modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="agent-info">
+                    <div class="agent-stat">
+                        <span class="stat-label">Status</span>
+                        <span class="stat-value" id="modal-agent-status">Normal</span>
+                    </div>
+                    <div class="agent-stat">
+                        <span class="stat-label">Atendimentos Ativos</span>
+                        <span class="stat-value" id="modal-agent-count">0</span>
+                    </div>
+                </div>
+                <div class="chats-section">
+                    <h3>Clientes em Atendimento</h3>
+                    <div id="modal-chats-list" class="chats-list">
+                        <!-- Lista de clientes será inserida aqui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
