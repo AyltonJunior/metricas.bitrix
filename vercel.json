@@ -23,10 +23,5 @@
       "source": "/api/:path*",
       "destination": "http://147.182.191.150:4000/:path*"
     }
-  ],
-  "functions": {
-    "api/proxy.js": {
-      "runtime": "nodejs18.x"
-    }
-  }
+  ]
 }
