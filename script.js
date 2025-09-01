@@ -1,4 +1,6 @@
-const API_URL = 'http://147.182.191.150:4000/getlist';
+const API_URL = 'https://147.182.191.150:4000/getlist';
+const API_URL_FALLBACK = 'http://147.182.191.150:4000/getlist';
+const API_URL_PROXY = '/api/getlist';
 const UPDATE_INTERVAL = 10000;
 
 const EXCLUDED_BOTS = ['CoPilot', 'Depto. Comercial - Grupo Hi']; 
@@ -6,6 +8,7 @@ const EXCLUDED_BOTS = ['CoPilot', 'Depto. Comercial - Grupo Hi'];
 // Armazenará todos os dados do dia para não precisar buscar novamente
 let fullTodayData = [];
 let activeSectors = ['NRS', 'NRS Franqueados']; // Visão padrão
+let isProduction = window.location.protocol === 'https:';
 
 document.addEventListener('DOMContentLoaded', () => {
     updateClock();
@@ -60,8 +63,10 @@ async function fetchAndRefresh() {
         const allData = await fetchData();
         fullTodayData = allData.filter(filterByToday).filter(filterOutBots);
         renderDashboardForSectors(activeSectors);
+        hideConnectionError();
     } catch (error) {
         console.error("Falha ao buscar dados:", error);
+        showConnectionError();
     }
 }
 
@@ -280,7 +285,35 @@ function updateMetricsUI(metrics) {
     document.getElementById('completed-chats-value').textContent = metrics.completedChatsCount;
 }
 
-const fetchData = async () => (await fetch(API_URL)).json();
+const fetchData = async () => {
+    const urls = isProduction ? [API_URL_PROXY, API_URL, API_URL_FALLBACK] : [API_URL_FALLBACK, API_URL];
+    
+    for (let i = 0; i < urls.length; i++) {
+        try {
+            console.log(`Tentando conectar com: ${urls[i]}`);
+            const response = await fetch(urls[i]);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            console.log('Conexão bem-sucedida!');
+            return data;
+        } catch (error) {
+            console.error(`Erro ao conectar com ${urls[i]}:`, error);
+            
+            // Se não é a última tentativa, continua para a próxima URL
+            if (i < urls.length - 1) {
+                console.log('Tentando próxima URL...');
+                continue;
+            }
+            
+            // Se é a última tentativa, lança o erro
+            throw error;
+        }
+    }
+};
 const filterByToday = (item) => parseDate(item['Modificado em'])?.toDateString() === new Date().toDateString();
 const filterOutBots = (item) => !EXCLUDED_BOTS.includes(item.Funcionário);
 const isWaitingStatus = (item) => item['Status (detalhado)'] === 'Cliente aguardando resposta do agente' || item['Status (detalhado)'] === 'Nova conversa iniciada';
@@ -435,4 +468,24 @@ function closeModal() {
     const modal = document.getElementById('agent-modal');
     modal.classList.remove('show');
     document.body.style.overflow = '';
+}
+
+function showConnectionError() {
+    const statusIndicator = document.querySelector('.status-indicator');
+    if (statusIndicator) {
+        statusIndicator.innerHTML = `
+            <span class="status-dot error"></span>
+            <span class="status-text">Erro de Conexão</span>
+        `;
+    }
+}
+
+function hideConnectionError() {
+    const statusIndicator = document.querySelector('.status-indicator');
+    if (statusIndicator) {
+        statusIndicator.innerHTML = `
+            <span class="status-dot"></span>
+            <span class="status-text">Sistema Online</span>
+        `;
+    }
 }
