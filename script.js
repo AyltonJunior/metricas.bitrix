@@ -638,6 +638,12 @@ function stopAutoRotation() {
         autoRotationInterval = null;
     }
     
+    // Limpa o intervalo da barra de progresso
+    if (window.progressInterval) {
+        clearInterval(window.progressInterval);
+        window.progressInterval = null;
+    }
+    
     isAutoRotationActive = false;
     updateAutoRotationIndicator();
     
@@ -729,20 +735,56 @@ function hideCurrentSectorDisplay() {
 function startProgressBar(progressBar) {
     if (!progressBar) return;
     
+    // Limpa qualquer intervalo anterior
+    if (window.progressInterval) {
+        clearInterval(window.progressInterval);
+        window.progressInterval = null;
+    }
+    
     // Reseta a barra
     progressBar.style.width = '0%';
     
+    // Atualiza o indicador de tempo
+    updateTimeRemaining(rotationInterval / 1000);
+    
     // Anima a barra de 0% a 100% no tempo configurado
     let progress = 0;
-    const stepTime = rotationInterval / 100; // Tempo por passo
-    const interval = setInterval(() => {
-        progress += 1;
-        progressBar.style.width = `${progress}%`;
+    const stepTime = 50; // Atualiza a cada 50ms para movimento mais suave
+    const totalSteps = rotationInterval / stepTime;
+    const progressIncrement = 100 / totalSteps;
+    
+    window.progressInterval = setInterval(() => {
+        progress += progressIncrement;
         
         if (progress >= 100) {
-            clearInterval(interval);
+            progress = 100;
+            clearInterval(window.progressInterval);
+            window.progressInterval = null;
+            updateTimeRemaining(0);
         }
+        
+        progressBar.style.width = `${progress}%`;
+        
+        // Atualiza o tempo restante
+        const remainingSeconds = Math.ceil((100 - progress) * (rotationInterval / 1000) / 100);
+        updateTimeRemaining(remainingSeconds);
     }, stepTime);
+}
+
+// Função para atualizar o tempo restante
+function updateTimeRemaining(seconds) {
+    const timeRemainingElement = document.querySelector('.time-remaining');
+    if (timeRemainingElement) {
+        if (seconds <= 0) {
+            timeRemainingElement.textContent = '0s';
+        } else if (seconds < 60) {
+            timeRemainingElement.textContent = `${seconds}s`;
+        } else {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            timeRemainingElement.textContent = `${minutes}m ${remainingSeconds}s`;
+        }
+    }
 }
 
 // Função para atualizar o indicador de setor atual
@@ -756,8 +798,10 @@ function updateCurrentSectorDisplay(sectorNames) {
     // Atualiza o nome do setor
     sectorNameElement.textContent = sectorNames.join(' + ');
     
-    // Reinicia a barra de progresso
-    startProgressBar(progressBar);
+    // Pequeno delay para garantir que a barra anterior seja limpa
+    setTimeout(() => {
+        startProgressBar(progressBar);
+    }, 100);
     
     console.log(`Indicador de setor atualizado: ${sectorNames.join(', ')}`);
 }
@@ -771,85 +815,11 @@ function toggleAutoRotation() {
     }
 }
 
-// Função para ir para o próximo setor manualmente
-function goToNextSector() {
-    if (isAutoRotationActive) {
-        stopAutoRotation();
-    }
-    
-    // Detecta os setores disponíveis se necessário
-    if (allSectors.length === 0) {
-        detectAvailableSectors();
-    }
-    
-    if (allSectors.length === 0) {
-        console.log('Nenhum setor disponível para navegação');
-        return;
-    }
-    
-    currentRotationIndex = (currentRotationIndex + 1) % allSectors.length;
-    const nextSectors = allSectors[currentRotationIndex];
-    
-    activeSectors = nextSectors;
-    updateActiveTab();
-    renderDashboardForSectors(nextSectors);
-    
-    // Mostra o indicador do setor atual
-    showCurrentSectorDisplay(nextSectors);
-    
-    // Ativa o destaque da fila "Aguardando Humano" temporariamente
-    activateHumanQueueHighlight();
-    setTimeout(() => {
-        if (!isAutoRotationActive) {
-            deactivateHumanQueueHighlight();
-        }
-    }, 3000); // Destaque por 3 segundos
-    
-    console.log(`Navegando para: ${nextSectors.join(', ')}`);
-}
 
-// Função para ir para o setor anterior manualmente
-function goToPreviousSector() {
-    if (isAutoRotationActive) {
-        stopAutoRotation();
-    }
-    
-    // Detecta os setores disponíveis se necessário
-    if (allSectors.length === 0) {
-        detectAvailableSectors();
-    }
-    
-    if (allSectors.length === 0) {
-        console.log('Nenhum setor disponível para navegação');
-        return;
-    }
-    
-    currentRotationIndex = (currentRotationIndex - 1 + allSectors.length) % allSectors.length;
-    const previousSectors = allSectors[currentRotationIndex];
-    
-    activeSectors = previousSectors;
-    updateActiveTab();
-    renderDashboardForSectors(previousSectors);
-    
-    // Mostra o indicador do setor atual
-    showCurrentSectorDisplay(previousSectors);
-    
-    // Ativa o destaque da fila "Aguardando Humano" temporariamente
-    activateHumanQueueHighlight();
-    setTimeout(() => {
-        if (!isAutoRotationActive) {
-            deactivateHumanQueueHighlight();
-        }
-    }, 3000); // Destaque por 3 segundos
-    
-    console.log(`Navegando para: ${previousSectors.join(', ')}`);
-}
 
 // Inicializar controles de rotação automática
 function initializeAutoRotationControls() {
     const toggleBtn = document.getElementById('toggle-auto-rotation');
-    const nextBtn = document.getElementById('next-sector');
-    const prevBtn = document.getElementById('prev-sector');
     const stopBtn = document.getElementById('stop-rotation-display');
     const timerInput = document.getElementById('rotation-timer');
     
@@ -858,14 +828,6 @@ function initializeAutoRotationControls() {
             toggleAutoRotation();
             updateToggleButtonIcon();
         });
-    }
-    
-    if (nextBtn) {
-        nextBtn.addEventListener('click', goToNextSector);
-    }
-    
-    if (prevBtn) {
-        prevBtn.addEventListener('click', goToPreviousSector);
     }
     
     if (stopBtn) {
