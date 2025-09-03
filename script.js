@@ -4,6 +4,10 @@ const API_URL_PROXY = '/api/getlist';
 const API_URL_CORS_PROXY = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('http://147.182.191.150:4000/getlist');
 const UPDATE_INTERVAL = 10000;
 
+// Configuração de rotação automática
+let rotationInterval = 30000; // 30 segundos por padrão
+let rotationIntervalMinutes = 0.5; // 0.5 minutos
+
 const EXCLUDED_BOTS = ['CoPilot', 'Depto. Comercial - Grupo Hi']; 
 
 // Armazenará todos os dados do dia para não precisar buscar novamente
@@ -24,6 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Inicializa controles do modal
     initializeModalControls();
+    
+    // Inicializa controles de rotação automática
+    initializeAutoRotationControls();
+    
+    // Detecta os setores disponíveis para rotação
+    detectAvailableSectors();
 });
 
 function updateClock() {
@@ -530,5 +540,475 @@ function hideConnectionError() {
             <span class="status-dot"></span>
             <span class="status-text">Sistema Online</span>
         `;
+    }
+}
+
+// Sistema de rotação automática dos setores
+let autoRotationInterval = null;
+let isAutoRotationActive = false;
+let currentRotationIndex = 0;
+
+// Lista de todos os setores disponíveis para rotação (será preenchida dinamicamente)
+let allSectors = [];
+
+// Função para detectar os setores disponíveis no menu
+function detectAvailableSectors() {
+    const sectorButtons = document.querySelectorAll('#sector-tabs button');
+    const sectors = [];
+    
+    sectorButtons.forEach(button => {
+        const sectorName = button.textContent.trim();
+        if (sectorName && !sectors.includes(sectorName)) {
+            sectors.push(sectorName);
+        }
+    });
+    
+    // Agrupa setores relacionados (como NRS e NRS Franqueados)
+    const groupedSectors = [];
+    let currentGroup = [];
+    
+    sectors.forEach(sector => {
+        if (sector === 'NRS' || sector === 'NRS Franqueados') {
+            if (currentGroup.length === 0) {
+                currentGroup = [sector];
+            } else if (currentGroup.includes('NRS') || currentGroup.includes('NRS Franqueados')) {
+                currentGroup.push(sector);
+            } else {
+                if (currentGroup.length > 0) {
+                    groupedSectors.push([...currentGroup]);
+                }
+                currentGroup = [sector];
+            }
+        } else {
+            if (currentGroup.length > 0) {
+                groupedSectors.push([...currentGroup]);
+                currentGroup = [];
+            }
+            groupedSectors.push([sector]);
+        }
+    });
+    
+    // Adiciona o último grupo se existir
+    if (currentGroup.length > 0) {
+        groupedSectors.push([...currentGroup]);
+    }
+    
+    allSectors = groupedSectors;
+    console.log('Setores detectados para rotação:', allSectors);
+    
+    return groupedSectors;
+}
+
+// Função para iniciar a rotação automática
+function startAutoRotation() {
+    if (autoRotationInterval) return;
+    
+    // Detecta os setores disponíveis antes de iniciar
+    if (allSectors.length === 0) {
+        detectAvailableSectors();
+    }
+    
+    if (allSectors.length === 0) {
+        console.log('Nenhum setor disponível para rotação');
+        return;
+    }
+    
+    isAutoRotationActive = true;
+    currentRotationIndex = 0;
+    
+    // Atualiza o indicador visual
+    updateAutoRotationIndicator();
+    
+    // Mostra o indicador do setor atual
+    const currentSectors = allSectors[currentRotationIndex];
+    showCurrentSectorDisplay(currentSectors);
+    
+    // Inicia o intervalo de rotação
+    autoRotationInterval = setInterval(() => {
+        rotateToNextSector();
+    }, rotationInterval);
+    
+    console.log(`Rotação automática iniciada - ${rotationInterval/1000} segundos por setor. Total de setores: ${allSectors.length}`);
+}
+
+// Função para parar a rotação automática
+function stopAutoRotation() {
+    if (autoRotationInterval) {
+        clearInterval(autoRotationInterval);
+        autoRotationInterval = null;
+    }
+    
+    isAutoRotationActive = false;
+    updateAutoRotationIndicator();
+    
+    // Esconde o indicador de setor atual
+    hideCurrentSectorDisplay();
+    
+    console.log('Rotação automática parada');
+}
+
+// Função para rotacionar para o próximo setor
+function rotateToNextSector() {
+    if (!isAutoRotationActive) return;
+    
+    currentRotationIndex = (currentRotationIndex + 1) % allSectors.length;
+    const nextSectors = allSectors[currentRotationIndex];
+    
+    // Atualiza os setores ativos
+    activeSectors = nextSectors;
+    
+    // Atualiza as abas ativas
+    updateActiveTab();
+    
+    // Renderiza o dashboard para os novos setores
+    renderDashboardForSectors(nextSectors);
+    
+    // Atualiza o indicador de setor atual
+    updateCurrentSectorDisplay(nextSectors);
+    
+    console.log(`Rotacionando para: ${nextSectors.join(', ')}`);
+}
+
+// Função para atualizar o indicador visual da rotação
+function updateAutoRotationIndicator() {
+    const statusIndicator = document.querySelector('.status-indicator');
+    if (!statusIndicator) return;
+    
+    if (isAutoRotationActive) {
+        statusIndicator.innerHTML = `
+            <span class="status-dot auto-rotation"></span>
+            <span class="status-text">Rotação Automática</span>
+        `;
+    } else {
+        statusIndicator.innerHTML = `
+            <span class="status-dot"></span>
+            <span class="status-text">Sistema Online</span>
+        `;
+    }
+}
+
+// Função para mostrar o indicador de setor atual
+function showCurrentSectorDisplay(sectorNames) {
+    const sectorDisplay = document.getElementById('current-sector-display');
+    const sectorNameElement = sectorDisplay.querySelector('.sector-name');
+    const progressBar = sectorDisplay.querySelector('.progress-bar');
+    
+    if (!sectorDisplay) return;
+    
+    // Atualiza o nome do setor
+    sectorNameElement.textContent = sectorNames.join(' + ');
+    
+    // Mostra o indicador
+    sectorDisplay.classList.remove('hidden');
+    sectorDisplay.classList.add('show');
+    
+    // Inicia a barra de progresso
+    startProgressBar(progressBar);
+    
+    // Ativa o destaque da fila "Aguardando Humano"
+    activateHumanQueueHighlight();
+    
+    console.log(`Indicador de setor exibido: ${sectorNames.join(', ')}`);
+}
+
+// Função para esconder o indicador de setor atual
+function hideCurrentSectorDisplay() {
+    const sectorDisplay = document.getElementById('current-sector-display');
+    if (!sectorDisplay) return;
+    
+    sectorDisplay.classList.remove('show');
+    sectorDisplay.classList.add('hidden');
+    
+    // Desativa o destaque da fila "Aguardando Humano"
+    deactivateHumanQueueHighlight();
+    
+    console.log('Indicador de setor ocultado');
+}
+
+// Função para iniciar a barra de progresso
+function startProgressBar(progressBar) {
+    if (!progressBar) return;
+    
+    // Reseta a barra
+    progressBar.style.width = '0%';
+    
+    // Anima a barra de 0% a 100% no tempo configurado
+    let progress = 0;
+    const stepTime = rotationInterval / 100; // Tempo por passo
+    const interval = setInterval(() => {
+        progress += 1;
+        progressBar.style.width = `${progress}%`;
+        
+        if (progress >= 100) {
+            clearInterval(interval);
+        }
+    }, stepTime);
+}
+
+// Função para atualizar o indicador de setor atual
+function updateCurrentSectorDisplay(sectorNames) {
+    const sectorDisplay = document.getElementById('current-sector-display');
+    const sectorNameElement = sectorDisplay.querySelector('.sector-name');
+    const progressBar = sectorDisplay.querySelector('.progress-bar');
+    
+    if (!sectorDisplay || !isAutoRotationActive) return;
+    
+    // Atualiza o nome do setor
+    sectorNameElement.textContent = sectorNames.join(' + ');
+    
+    // Reinicia a barra de progresso
+    startProgressBar(progressBar);
+    
+    console.log(`Indicador de setor atualizado: ${sectorNames.join(', ')}`);
+}
+
+// Função para alternar a rotação automática
+function toggleAutoRotation() {
+    if (isAutoRotationActive) {
+        stopAutoRotation();
+    } else {
+        startAutoRotation();
+    }
+}
+
+// Função para ir para o próximo setor manualmente
+function goToNextSector() {
+    if (isAutoRotationActive) {
+        stopAutoRotation();
+    }
+    
+    // Detecta os setores disponíveis se necessário
+    if (allSectors.length === 0) {
+        detectAvailableSectors();
+    }
+    
+    if (allSectors.length === 0) {
+        console.log('Nenhum setor disponível para navegação');
+        return;
+    }
+    
+    currentRotationIndex = (currentRotationIndex + 1) % allSectors.length;
+    const nextSectors = allSectors[currentRotationIndex];
+    
+    activeSectors = nextSectors;
+    updateActiveTab();
+    renderDashboardForSectors(nextSectors);
+    
+    // Mostra o indicador do setor atual
+    showCurrentSectorDisplay(nextSectors);
+    
+    // Ativa o destaque da fila "Aguardando Humano" temporariamente
+    activateHumanQueueHighlight();
+    setTimeout(() => {
+        if (!isAutoRotationActive) {
+            deactivateHumanQueueHighlight();
+        }
+    }, 3000); // Destaque por 3 segundos
+    
+    console.log(`Navegando para: ${nextSectors.join(', ')}`);
+}
+
+// Função para ir para o setor anterior manualmente
+function goToPreviousSector() {
+    if (isAutoRotationActive) {
+        stopAutoRotation();
+    }
+    
+    // Detecta os setores disponíveis se necessário
+    if (allSectors.length === 0) {
+        detectAvailableSectors();
+    }
+    
+    if (allSectors.length === 0) {
+        console.log('Nenhum setor disponível para navegação');
+        return;
+    }
+    
+    currentRotationIndex = (currentRotationIndex - 1 + allSectors.length) % allSectors.length;
+    const previousSectors = allSectors[currentRotationIndex];
+    
+    activeSectors = previousSectors;
+    updateActiveTab();
+    renderDashboardForSectors(previousSectors);
+    
+    // Mostra o indicador do setor atual
+    showCurrentSectorDisplay(previousSectors);
+    
+    // Ativa o destaque da fila "Aguardando Humano" temporariamente
+    activateHumanQueueHighlight();
+    setTimeout(() => {
+        if (!isAutoRotationActive) {
+            deactivateHumanQueueHighlight();
+        }
+    }, 3000); // Destaque por 3 segundos
+    
+    console.log(`Navegando para: ${previousSectors.join(', ')}`);
+}
+
+// Inicializar controles de rotação automática
+function initializeAutoRotationControls() {
+    const toggleBtn = document.getElementById('toggle-auto-rotation');
+    const nextBtn = document.getElementById('next-sector');
+    const prevBtn = document.getElementById('prev-sector');
+    const stopBtn = document.getElementById('stop-rotation-display');
+    const timerInput = document.getElementById('rotation-timer');
+    
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            toggleAutoRotation();
+            updateToggleButtonIcon();
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', goToNextSector);
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', goToPreviousSector);
+    }
+    
+    if (stopBtn) {
+        stopBtn.addEventListener('click', () => {
+            stopAutoRotation();
+            updateToggleButtonIcon();
+        });
+    }
+    
+    if (timerInput) {
+        // Define o valor inicial
+        timerInput.value = rotationInterval / 1000;
+        
+        // Event listener para mudanças no input
+        timerInput.addEventListener('change', (e) => {
+            const newValue = parseInt(e.target.value);
+            if (updateRotationInterval(newValue)) {
+                e.target.value = newValue;
+            } else {
+                e.target.value = rotationInterval / 1000; // Reverte para o valor atual
+            }
+        });
+        
+        // Event listener para pressionar Enter
+        timerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const newValue = parseInt(e.target.value);
+                if (updateRotationInterval(newValue)) {
+                    e.target.value = newValue;
+                    e.target.blur(); // Remove o foco
+                } else {
+                    e.target.value = rotationInterval / 1000;
+                }
+            }
+        });
+    }
+}
+
+// Função para atualizar o ícone do botão de toggle
+function updateToggleButtonIcon() {
+    const toggleBtn = document.getElementById('toggle-auto-rotation');
+    if (!toggleBtn) return;
+    
+    const icon = toggleBtn.querySelector('i');
+    if (isAutoRotationActive) {
+        icon.className = 'fas fa-pause';
+        toggleBtn.classList.add('pause');
+        toggleBtn.title = 'Parar Rotação Automática';
+    } else {
+        icon.className = 'fas fa-play';
+        toggleBtn.classList.remove('pause');
+        toggleBtn.title = 'Iniciar Rotação Automática';
+    }
+}
+
+// Função para atualizar a lista de setores quando o menu for modificado
+function updateAvailableSectors() {
+    // Para a rotação automática se estiver ativa
+    if (isAutoRotationActive) {
+        stopAutoRotation();
+    }
+    
+    // Redetecta os setores disponíveis
+    detectAvailableSectors();
+    
+    // Reseta o índice de rotação
+    currentRotationIndex = 0;
+    
+    console.log('Lista de setores atualizada:', allSectors);
+}
+
+// Função para obter informações sobre os setores disponíveis
+function getSectorsInfo() {
+    if (allSectors.length === 0) {
+        detectAvailableSectors();
+    }
+    
+    return {
+        total: allSectors.length,
+        current: currentRotationIndex + 1,
+        sectors: allSectors,
+        isActive: isAutoRotationActive,
+        interval: rotationInterval / 1000
+    };
+}
+
+// Função para atualizar o tempo de rotação
+function updateRotationInterval(newIntervalSeconds) {
+    if (newIntervalSeconds < 5 || newIntervalSeconds > 300) {
+        console.log('Tempo inválido. Deve ser entre 5 e 300 segundos.');
+        return false;
+    }
+    
+    rotationInterval = newIntervalSeconds * 1000;
+    rotationIntervalMinutes = newIntervalSeconds / 60;
+    
+    // Se a rotação estiver ativa, reinicia com o novo tempo
+    if (isAutoRotationActive) {
+        stopAutoRotation();
+        startAutoRotation();
+    }
+    
+    console.log(`Tempo de rotação atualizado para ${newIntervalSeconds} segundos`);
+    return true;
+}
+
+// Função para obter o tempo de rotação atual
+function getCurrentRotationInterval() {
+    return {
+        seconds: rotationInterval / 1000,
+        minutes: rotationIntervalMinutes,
+        milliseconds: rotationInterval
+    };
+}
+
+// Função para ativar o destaque da fila "Aguardando Humano"
+function activateHumanQueueHighlight() {
+    const humanQueue = document.getElementById('human-queue');
+    const aguardandoHumanoCard = document.getElementById('aguardando-humano-card');
+    
+    if (humanQueue) {
+        humanQueue.classList.add('auto-rotation-active');
+        console.log('Destaque da fila "Aguardando Humano" ativado');
+    }
+    
+    if (aguardandoHumanoCard) {
+        aguardandoHumanoCard.classList.add('auto-rotation-active');
+        console.log('Destaque do card "AGUARDANDO HUMANO" ativado');
+    }
+}
+
+// Função para desativar o destaque da fila "Aguardando Humano"
+function deactivateHumanQueueHighlight() {
+    const humanQueue = document.getElementById('human-queue');
+    const aguardandoHumanoCard = document.getElementById('aguardando-humano-card');
+    
+    if (humanQueue) {
+        humanQueue.classList.remove('auto-rotation-active');
+        console.log('Destaque da fila "Aguardando Humano" desativado');
+    }
+    
+    if (aguardandoHumanoCard) {
+        aguardandoHumanoCard.classList.remove('auto-rotation-active');
+        console.log('Destaque do card "AGUARDANDO HUMANO" desativado');
     }
 }

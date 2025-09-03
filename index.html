@@ -16,10 +16,40 @@
                     <span class="status-dot"></span>
                     <span class="status-text">Sistema Online</span>
                 </div>
+                <div class="auto-rotation-controls">
+                    <button class="auto-rotation-btn" id="toggle-auto-rotation" title="Iniciar/Parar Rotação Automática">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="auto-rotation-btn" id="next-sector" title="Próximo Setor">
+                        <i class="fas fa-forward"></i>
+                    </button>
+                    <button class="auto-rotation-btn" id="prev-sector" title="Setor Anterior">
+                        <i class="fas fa-backward"></i>
+                    </button>
+                    <div class="rotation-timer-controls">
+                        <label for="rotation-timer" class="timer-label">Tempo:</label>
+                        <input type="number" id="rotation-timer" class="timer-input" value="30" min="5" max="300" step="5" title="Tempo em segundos">
+                        <span class="timer-unit">s</span>
+                    </div>
+                </div>
                 <div id="clock"></div>
             </div>
         </div>
     </header>
+    
+    <!-- Indicador de setor atual durante rotação automática -->
+    <div id="current-sector-display" class="current-sector-display hidden">
+        <div class="sector-display-content">
+            <i class="fas fa-building"></i>
+            <span class="sector-name">Setor Atual</span>
+            <div class="rotation-progress">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+        <button class="stop-rotation-btn" id="stop-rotation-display" title="Parar Rotação Automática">
+            <i class="fas fa-stop"></i>
+        </button>
+    </div>
 
     <nav id="sector-tabs">
         <div class="tab-scroll-controls">
@@ -40,7 +70,7 @@
             <span class="metric-label">Fila Geral</span>
             <span class="metric-value" id="geral-queue-value">--</span>
         </div>
-        <div class="metric-card">
+        <div class="metric-card aguardando-humano" id="aguardando-humano-card">
             <div class="metric-icon">
                 <i class="fas fa-user-clock"></i>
             </div>

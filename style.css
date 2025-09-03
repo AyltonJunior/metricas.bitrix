@@ -54,7 +54,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 32px;
+    padding: 12px 32px;
     background: linear-gradient(135deg, var(--card-bg) 0%, #0d0d0d 100%);
     border-bottom: 1px solid var(--border-color);
     box-shadow: var(--shadow-lg);
@@ -80,7 +80,7 @@ header::before {
 
 header h1 { 
     margin: 0; 
-    font-size: 1.5rem; 
+    font-size: 1.25rem; 
     font-weight: 600;
     background: linear-gradient(135deg, var(--text-color) 0%, var(--text-secondary) 100%);
     -webkit-background-clip: text;
@@ -88,13 +88,358 @@ header h1 {
     background-clip: text;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .header-info {
     display: flex;
     align-items: center;
     gap: 24px;
+}
+
+/* Controles de rotação automática */
+.auto-rotation-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+}
+
+.auto-rotation-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--primary-accent), var(--primary-light));
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.auto-rotation-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-accent));
+}
+
+.auto-rotation-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.auto-rotation-btn.pause {
+    background: linear-gradient(135deg, var(--warning-color), #f59e0b);
+}
+
+.auto-rotation-btn.pause:hover {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.auto-rotation-btn i {
+    font-size: 0.875rem;
+}
+
+/* Controles de tempo de rotação */
+.rotation-timer-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 16px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.timer-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.timer-input {
+    width: 50px;
+    padding: 4px 6px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-color);
+    font-size: 0.75rem;
+    text-align: center;
+    font-family: var(--font-mono);
+    outline: none;
+}
+
+.timer-input:focus {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.timer-input::-webkit-inner-spin-button,
+.timer-input::-webkit-outer-spin-button {
+    opacity: 1;
+    height: 16px;
+}
+
+.timer-unit {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Indicador de setor atual durante rotação automática */
+.current-sector-display {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--warning-color) 0%, #f59e0b 100%);
+    color: white;
+    padding: 24px 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-100%);
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Destaque piscante para fila "Aguardando Humano" durante rotação automática */
+.queue-column.human-queue.auto-rotation-active {
+    animation: humanQueuePulse 1.5s ease-in-out infinite;
+    border: 2px solid var(--warning-color);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+.queue-column.human-queue.auto-rotation-active .queue-header {
+    background: linear-gradient(135deg, var(--warning-color), #f59e0b);
+    color: white;
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin: -12px -16px 16px -16px;
+}
+
+.queue-column.human-queue.auto-rotation-active .queue-header h2 {
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.queue-column.human-queue.auto-rotation-active .queue-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Destaque piscante para o card "AGUARDANDO HUMANO" durante rotação automática */
+.metric-card.aguardando-humano.auto-rotation-active {
+    animation: aguardandoHumanoPulse 1.2s ease-in-out infinite;
+    border: 2px solid var(--danger-color);
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+}
+
+.metric-card.aguardando-humano.auto-rotation-active .metric-value {
+    color: var(--danger-color) !important;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    animation: valueGlow 1.2s ease-in-out infinite;
+}
+
+.metric-card.aguardando-humano.auto-rotation-active .metric-icon {
+    animation: iconPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes humanQueuePulse {
+    0% {
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(245, 158, 11, 0.6);
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        transform: scale(1);
+    }
+}
+
+@keyframes aguardandoHumanoPulse {
+    0% {
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+        transform: scale(1);
+        border-color: var(--danger-color);
+    }
+    50% {
+        box-shadow: 0 0 35px rgba(239, 68, 68, 0.7);
+        transform: scale(1.03);
+        border-color: #fca5a5;
+    }
+    100% {
+        box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+        transform: scale(1);
+        border-color: var(--danger-color);
+    }
+}
+
+@keyframes valueGlow {
+    0%, 100% {
+        text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+    }
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.current-sector-display.show {
+    transform: translateY(0);
+}
+
+.current-sector-display.hidden {
+    transform: translateY(-100%);
+}
+
+.sector-display-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.sector-display-content i {
+    font-size: 2.5rem;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.sector-name {
+    font-size: 3.5rem;
+    font-weight: 800;
+    text-align: center;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+}
+
+.rotation-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 1));
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
+    border-radius: 0 0 3px 3px;
+}
+
+/* Botão de parar rotação no indicador */
+.stop-rotation-btn {
+    position: absolute;
+    top: 50%;
+    right: 24px;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-lg);
+    z-index: 1001;
+}
+
+.stop-rotation-btn:hover {
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: var(--shadow-xl);
+    background: linear-gradient(135deg, #dc2626, var(--danger-color));
+}
+
+.stop-rotation-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.stop-rotation-btn i {
+    font-size: 1.25rem;
+}
+
+/* Ajuste do header quando o indicador está visível */
+.current-sector-display.show ~ header {
+    margin-top: 100px;
+}
+
+/* Ajuste do nav quando o indicador está visível */
+.current-sector-display.show ~ nav {
+    margin-top: 100px;
+}
+
+/* Responsividade para o indicador de setor */
+@media (max-width: 768px) {
+    .sector-name {
+        font-size: 2.5rem;
+    }
+    
+    .sector-display-content i {
+        font-size: 2rem;
+    }
+    
+    .sector-display-content {
+        gap: 12px;
+        padding: 0 16px;
+    }
+    
+    .current-sector-display.show ~ header,
+    .current-sector-display.show ~ nav {
+        margin-top: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .sector-name {
+        font-size: 2rem;
+    }
+    
+    .sector-display-content i {
+        font-size: 1.5rem;
+    }
+    
+    .sector-display-content {
+        gap: 8px;
+        padding: 0 12px;
+    }
+    
+    .current-sector-display.show ~ header,
+    .current-sector-display.show ~ nav {
+        margin-top: 90px;
+    }
 }
 
 .status-indicator {
@@ -121,6 +466,26 @@ header h1 {
 .status-dot.warning {
     background: var(--warning-color);
     animation: pulse 1.5s infinite;
+}
+
+.status-dot.auto-rotation {
+    background: var(--warning-color);
+    animation: autoRotationPulse 1s ease-in-out infinite;
+}
+
+@keyframes autoRotationPulse {
+    0% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.2);
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
 }
 
 @keyframes pulse {
@@ -152,6 +517,8 @@ header h1 {
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
     padding-right: 64px; /* Espaço para os controles */
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 
 #sector-tabs::-webkit-scrollbar {
@@ -209,7 +576,7 @@ header h1 {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 16px 20px;
+    padding: 12px 16px;
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
